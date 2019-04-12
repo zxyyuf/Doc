@@ -1,0 +1,241 @@
+SELECT
+	ano,
+	substring(sts_time, 1, 10) AS DAY,
+	GROUP_CONCAT(bno) AS bno
+FROM
+	WID_ANOResult
+WHERE
+	acl = '3'
+AND (
+	callfrom LIKE '059%'
+	AND ahome NOT LIKE '059%'
+)
+AND substring(sts_time, 1, 10) =?
+AND substr(sts_time, 12) >= '110000'
+AND substr(sts_time, 12) <= '220000'
+AND (
+	cast(
+		substring(
+			substring(
+				substring(
+					substring(
+						bno_distrb,
+						instr(bno_distrb, ',') + 1
+					),
+					(
+						instr(
+							substring(
+								bno_distrb,
+								instr(bno_distrb, ',') + 1
+							),
+							','
+						) + 1
+					)
+				),
+				INSTR(
+					substring(
+						substring(
+							bno_distrb,
+							instr(bno_distrb, ',') + 1
+						),
+						(
+							instr(
+								substring(
+									bno_distrb,
+									instr(bno_distrb, ',') + 1
+								),
+								','
+							) + 1
+						)
+					),
+					','
+				) + 1
+			),
+			1,
+			instr(
+				substring(
+					substring(
+						substring(
+							bno_distrb,
+							instr(bno_distrb, ',') + 1
+						),
+						(
+							instr(
+								substring(
+									bno_distrb,
+									instr(bno_distrb, ',') + 1
+								),
+								','
+							) + 1
+						)
+					),
+					INSTR(
+						substring(
+							substring(
+								bno_distrb,
+								instr(bno_distrb, ',') + 1
+							),
+							(
+								instr(
+									substring(
+										bno_distrb,
+										instr(bno_distrb, ',') + 1
+									),
+									','
+								) + 1
+							)
+						),
+						','
+					) + 1
+				),
+				','
+			) - 1
+		) AS FLOAT
+	) + cast(
+		substring(
+			substring(
+				bno_distrb,
+				instr(bno_distrb, ',') + 1
+			),
+			1,
+			(
+				instr(
+					substring(
+						bno_distrb,
+						instr(bno_distrb, ',') + 1
+					),
+					','
+				) - 1
+			)
+		) AS FLOAT
+	)
+) >= 0.6
+GROUP BY
+	ano,
+	substring(sts_time, 1, 10)
+HAVING
+	sum(callsum) / count(*) >= 2
+AND sum(
+	callsum * bnodispersion * BcityDispersion
+) >= 10
+AND sum(
+	(
+		CASE
+		WHEN Callduration = 0
+		OR cast(
+			substring(
+				substring(
+					cd_distrb,
+					instr(cd_distrb, ',') + 1
+				),
+				1,
+				(
+					instr(
+						substring(
+							cd_distrb,
+							instr(cd_distrb, ',') + 1
+						),
+						','
+					) - 1
+				)
+			) AS FLOAT
+		) = 1 THEN
+			0
+		ELSE
+			Callduration / (
+				1 - cast(
+					substring(
+						substring(
+							cd_distrb,
+							instr(cd_distrb, ',') + 1
+						),
+						1,
+						(
+							instr(
+								substring(
+									cd_distrb,
+									instr(cd_distrb, ',') + 1
+								),
+								','
+							) - 1
+						)
+					) AS FLOAT
+				)
+			)
+		END
+	)
+) / count(*) >= 90
+AND sum(callduration * callsum) / sum(callsum) >= 10
+AND sum(
+	callsum * bnodispersion * BcityDispersion
+) / sum(callsum * bnodispersion) >= 0.6
+AND sum(
+	callsum * cast(
+		substring(
+			substring(
+				cd_distrb,
+				instr(cd_distrb, ',') + 1
+			),
+			1,
+			(
+				instr(
+					substring(
+						cd_distrb,
+						instr(cd_distrb, ',') + 1
+					),
+					','
+				) - 1
+			)
+		) AS FLOAT
+	)
+) / sum(callsum) >= 0.4
+AND sum(
+	callsum * (
+		ifnull(
+			cast(
+				regexp_extract (
+					cd_distrb,
+					'([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)',
+					12
+				) AS FLOAT
+			),
+			0
+		) + ifnull(
+			cast(
+				regexp_extract (
+					cd_distrb,
+					'([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)',
+					13
+				) AS FLOAT
+			),
+			0
+		) + ifnull(
+			cast(
+				regexp_extract (
+					cd_distrb,
+					'([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)',
+					14
+				) AS FLOAT
+			),
+			0
+		) + ifnull(
+			cast(
+				regexp_extract (
+					cd_distrb,
+					'([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)',
+					15
+				) AS FLOAT
+			),
+			0
+		) + ifnull(
+			cast(
+				regexp_extract (
+					cd_distrb,
+					'([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)',
+					16
+				) AS FLOAT
+			),
+			0
+		)
+	)
+) > 0
